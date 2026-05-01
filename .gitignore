@@ -1,0 +1,47 @@
+# ==========================================
+# Genesis Infrastructure - Global Ignores
+# ==========================================
+
+# --- Terraform / Terragrunt ---
+.terraform/
+.terragrunt-cache/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# --- Provider Specific Artifacts ---
+.aws/
+.azure/
+.gcp/
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# --- Environment Secrets (Safety First) ---
+# Blocks local secret files often used during dev
+.env
+.env.*
+secrets.tfvars
+terraform.tfvars
+
+# --- Tooling & OS ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.bak
+dist/
+bin/
+
+# --- Testing Artifacts ---
+tests/results/
+junit.xml
+coverage.out
+
+# --- Genesis Specifics ---
+# If you use local operational shortcuts or temporary logs
+logs/
+*.tmp
