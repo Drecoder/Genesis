@@ -1,4 +1,3 @@
----
 
 # Genesis: Platform Architecture
 
