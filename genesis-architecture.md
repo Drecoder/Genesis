@@ -348,14 +348,6 @@ flowchart LR
 
 ---
 
-## Touch Command
-
-```bash
-touch genesis-platform-complete.md
-```
-
----
-
 ## What This Document Represents
 
 | Aspect | Description |
