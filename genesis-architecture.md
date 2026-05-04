@@ -110,15 +110,15 @@ flowchart TB
     subgraph FailureModes [Feedback Loop Failure Modes]
         
         subgraph Delay [Delayed Feedback]
-            D1[Security finding → late policy update]\nRisk: Vulnerable DU remains exposed
-            D2[Cost anomaly → late budget enforcement]\nRisk: Budget overrun
-            D3[Observability → late scaling]\nRisk: Performance degradation
+            D1[Security finding → late policy update<br/>Risk: Vulnerable DU remains exposed]
+            D2[Cost anomaly → late budget enforcement<br/>Risk: Budget overrun]
+            D3[Observability → late scaling<br/>Risk: Performance degradation]
         end
         
         subgraph Break [Broken Feedback]
-            B1[Intelligence plane down]\nEffect: No new feedback to control plane
-            B2[Control plane ignores feedback]\nEffect: Manual intervention required
-            B3[Feedback loop corrupted]\nEffect: Incorrect policy updates
+            B1[Intelligence plane down<br/>Effect: No new feedback to control plane]
+            B2[Control plane ignores feedback<br/>Effect: Manual intervention required]
+            B3[Feedback loop corrupted<br/>Effect: Incorrect policy updates]
         end
         
         subgraph Mitigations [Mitigations]
