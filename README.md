@@ -1,6 +1,6 @@
 # Genesis: Multi-Cloud Platform Engine
 
-Genesis is a **Day 0 Infrastructure-as-Platform (IaP)** framework for provisioning secure, observable, and production-ready foundations across AWS, GCP, and Azure using Terraform and OIDC-based identity.
+Genesis is a **Day 0 Infrastructure-as-Platform (IaP)** framework for provisioning secure, observable, and production-ready foundations across AWS, GCP, and Azure. It utilizes a decentralized **Delivery Unit (DU)** model where infrastructure is treated as a set of governed microservices.
 
 ---
 
@@ -8,13 +8,10 @@ Genesis is a **Day 0 Infrastructure-as-Platform (IaP)** framework for provisioni
 
 Genesis implements a **Sovereign Engineering architecture** focused on:
 
-- Identity-first cloud access (OIDC, no static secrets)
-- Deterministic infrastructure provisioning
-- Strict environment isolation
-- Embedded governance and compliance controls
-- Multi-cloud federation with consistent policy enforcement
-
-Rather than treating infrastructure as isolated deployments, Genesis defines a **platform model composed of reusable modules and environment compositions**.
+- [cite_start]**Decentralized State**: Each DU/VPC manages its own independent state file to minimize blast radius. [cite: 1, 2]
+- [cite_start]**Identity-First Security**: OIDC-based authentication (GitHub → Cloud) eliminates static secrets. [cite: 1]
+- **Event-Driven CI/CD**: Resilient, sequential deployments via SQS FIFO and Lambda services.
+- [cite_start]**Embedded Governance**: Multi-cloud federation with consistent policy enforcement via SCPs, Azure Policy, and GCP Org Constraints. [cite: 1, 3]
 
 ---
 
@@ -23,28 +20,21 @@ Rather than treating infrastructure as isolated deployments, Genesis defines a *
 Genesis is structured into three foundational layers:
 
 ### 1. Bootstrap (Trust Layer)
-Initializes cloud foundations required for automation:
-- OIDC identity federation (GitHub → Cloud providers)
-- Remote state backends
-- Encryption + audit prerequisites
-- Root-of-trust establishment per cloud
+[cite_start]Initializes cloud foundations required for automation: [cite: 1, 2]
+- [cite_start]OIDC identity federation. [cite: 1]
+- [cite_start]Remote state backend initialization. [cite: 1]
+- IAM Permission Boundaries for CI/CD Lambda runners.
 
 ### 2. Modules (Logic Layer)
-Reusable, composable Terraform building blocks:
-- Governance (policy enforcement across clouds)
-- Networking (VPC / VNet / Shared VPC patterns)
-- Identity (IAM / RBAC abstractions)
-- Compute (Kubernetes / workload primitives)
-- Observability (logging, metrics, tracing standards)
+[cite_start]Reusable, composable Terraform building blocks: [cite: 1, 2]
+- [cite_start]**Governance**: Policy enforcement (Deny Public IP, Enforce Encryption, Tagging). [cite: 3, 4, 13]
+- [cite_start]**Networking**: VPC / VNet / Shared VPC patterns per DU. [cite: 1]
+- [cite_start]**Identity**: IAM / RBAC abstractions. [cite: 1]
 
-Modules define **capabilities, not deployments**.
-
-### 3. Environments (Execution Layer)
-Concrete infrastructure deployments:
-- `dev`, `staging`, `prod`
-- Cloud-specific instantiations (AWS / GCP / Azure)
-- Composed exclusively from modules
-- Represents runtime systems (VPCs, workloads, services)
+### 3. CI/CD (Automation Service)
+- **FIFO SQS**: Ensures deterministic, sequential execution per DU to prevent state drift.
+- **Lambda Runner**: A serverless service that generates and executes Terraform plans.
+- **DLQ**: Dead Letter Queue for failed compliance or infrastructure runs.
 
 ---
 
@@ -53,69 +43,51 @@ Concrete infrastructure deployments:
 ```text
 .
 ├── .github/workflows/   # CI/CD pipelines (OIDC-based deployments)
-├── bootstrap/           # Cloud initialization (identity + state)
-├── modules/             # Reusable infrastructure components
-├── environments/        # Environment-specific deployments
-├── tests/               # Infrastructure testing (Terratest)
-└── Makefile             # Operational interface
-🚀 Core Capabilities
-🔐 Identity-First Security
-OIDC-based authentication (GitHub → Cloud)
-No long-lived credentials
-Least-privilege role assumptions per environment
-🌍 Multi-Cloud Federation
+[cite_start]├── bootstrap/           # Cloud initialization (identity + state) [cite: 1]
+[cite_start]├── modules/             # Reusable infrastructure components [cite: 1]
+[cite_start]│   └── governance/      # Multi-cloud guardrails (AWS, Azure, GCP) [cite: 1, 3]
+[cite_start]├── environments/        # DU-specific deployments (dev, staging, prod) [cite: 1]
+[cite_start]├── apps/                # Cloud-specific application scaffolding [cite: 1]
+[cite_start]└── Makefile             # Operational interface [cite: 1]
+```
 
-Consistent infrastructure patterns across:
+---
 
-AWS (VPC-based workloads)
-GCP (Shared VPC / high-throughput compute)
-Azure (VNet-based enterprise integration)
-🏛 Embedded Governance Layer
-Policy enforcement via Terraform modules
-Domain-based governance:
-Identity security
-Network restrictions
-Data protection baselines
-Consistent enforcement across clouds
-📊 Observability by Design
-Logging, metrics, and audit hooks embedded at module level
-Designed for production debugging and traceability
-✅ Automated Quality Gates
-tflint → linting and structure validation
-checkov → security policy scanning
-terratest → infrastructure validation tests
-⚙️ Getting Started
-1. Bootstrap a Cloud (example: AWS)
-cd bootstrap/aws
-terraform init
-terraform apply
-2. Deploy an Environment
-cd environments/dev/aws
-terraform init
-terraform apply
-3. Run Validation Suite
-make test
-🧪 Testing & Governance Model
+## 📊 System Flow
 
-All infrastructure must pass:
+```mermaid
+graph TD
+    subgraph "Control Plane"
+        GH[GitHub Actions] -->|Push/Merge| SQS[SQS FIFO Queue]
+        SQS -->|Trigger| L[CI/CD Lambda Service]
+        L -->|Failure| DLQ[Dead Letter Queue]
+    end
 
-Static analysis (tflint, checkov)
-Functional validation (terratest)
-Policy compliance checks (governance modules)
+    subgraph "Governance Guardrails"
+        L -->|terraform apply| AWS[AWS SCPs]
+        L -->|terraform apply| AZ[Azure Policies]
+        L -->|terraform apply| GCP[GCP Org Policy]
+    end
 
-Promotion flow:
+    subgraph "Data Plane (Decentralized DUs)"
+        AWS --> DU1[(DU VPC 1 State)]
+        AZ --> DU2[(DU VNet 2 State)]
+        GCP --> DU3[(DU Project 3 State)]
+    end
+```
 
-Dev → Staging → Production
+---
 
-No environment is promotable without passing validation gates.
+## 🏛 Embedded Governance Standards
 
-🧠 Engineering Principles
-Infrastructure as Code — everything is version-controlled and reproducible
-Separation of Concerns — bootstrap, modules, and environments are strictly isolated
-Policy as Code — governance is embedded in modules, not externalized
-Failure-Oriented Design — systems assume failure and enforce recovery paths
-Deterministic Provisioning — identical inputs produce identical infrastructure
-👤 Author
+All infrastructure must pass mandatory technical gates:
 
-Andres Arias
-Senior Platform Engineer | Distributed Systems | Cloud Infrastructure
+- [cite_start]**Network Security**: Deny Public IP exposure and public endpoints. [cite: 3, 4, 6]
+- [cite_start]**Data Protection**: Enforce encryption-at-rest and secure transport (TLS). [cite: 1, 3]
+- [cite_start]**Metadata Contract**: Mandatory tagging (`environment`, `owner`, `costCenter`, `application`) for cross-DU cost tracking. [cite: 13, 14, 15]
+
+---
+
+## 👤 Author
+
+**Andres Arias** Senior Platform Engineer | Distributed Systems | Cloud Infrastructure

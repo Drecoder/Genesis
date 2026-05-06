@@ -1,7 +1,7 @@
 resource "azurerm_policy_definition" "enforce_tagging" {
   name         = "enforce-required-tags"
   policy_type  = "Custom"
-  mode         = "Indexed"
+  mode         = "Indexed" # Evaluates resources that support tags and locations 
   display_name = "Enforce Required Resource Tags"
 
   description = "Ensures all resources have mandatory governance tags for ownership and cost tracking"
@@ -10,26 +10,26 @@ resource "azurerm_policy_definition" "enforce_tagging" {
     if = {
       anyOf = [
         {
-          field = "tags['environment']"
+          field = "tags['environment']" # Tracks Prod, Dev, Stage 
           exists = "false"
         },
         {
-          field = "tags['owner']"
+          field = "tags['owner']" # Identifies the responsible DU [cite: 14]
           exists = "false"
         },
         {
-          field = "tags['costCenter']"
+          field = "tags['costCenter']" # Enables financial chargebacks [cite: 14]
           exists = "false"
         },
         {
-          field = "tags['application']"
+          field = "tags['application']" # Maps resources to specific services [cite: 14]
           exists = "false"
         }
       ]
     }
 
     then = {
-      effect = "deny"
+      effect = "deny" # Blocks the API call if tags are missing 
     }
   })
 

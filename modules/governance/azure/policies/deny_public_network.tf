@@ -1,22 +1,20 @@
+# C:\WS\genesis\modules\governance\azure\policies\deny_public_network.tf
 resource "azurerm_policy_definition" "deny_public_network" {
   name         = "deny-public-network"
   policy_type  = "Custom"
-  mode         = "Indexed"
+  mode         = "Indexed" # Targets resources that support tags and locations 
   display_name = "Deny Public Network Exposure"
-
-  description = "Prevents creation of resources with public network access enabled"
+  description  = "Prevents creation of resources with public network access enabled"
 
   policy_rule = jsonencode({
     if = {
       anyOf = [
-
-        # Public IPs
+        # 1. Block all Public IP Address resources 
         {
           field  = "type"
           equals = "Microsoft.Network/publicIPAddresses"
         },
-
-        # Storage accounts with public access enabled
+        # 2. Block Storage Accounts if public access is not 'Disabled' [cite: 4, 5]
         {
           allOf = [
             {
@@ -29,8 +27,7 @@ resource "azurerm_policy_definition" "deny_public_network" {
             }
           ]
         },
-
-        # SQL servers with public endpoint enabled
+        # 3. Block SQL Servers with public endpoints [cite: 6, 7]
         {
           allOf = [
             {
@@ -45,9 +42,8 @@ resource "azurerm_policy_definition" "deny_public_network" {
         }
       ]
     }
-
     then = {
-      effect = "deny"
+      effect = "deny" # Hard enforcement for decentralized environments 
     }
   })
 

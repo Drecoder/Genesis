@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Genesis — Mission Progress</title>
+  <style>
+    :root {
+      --bg:        #0a0d14;
+      --surface:   #111622;
+      --surface2:  #161d2e;
+      --border:    #1e2d4a;
+      --accent:    #00c8ff;
+      --accent2:   #a259ff;
+      --gold:      #ffd700;
+      --green:     #00e676;
+      --orange:    #ff9100;
+      --red:       #ff3d71;
+      --text:      #e0eaff;
+      --muted:     #4a5980;
+      --glow:      0 0 18px rgba(0,200,255,0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      display: block;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(0,200,255,0.12) 0%, transparent 70%);
+      position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .hero-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 60%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.4rem;
+    }
+
+    /* ── Card ────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    /* ── XP / Level block ────────────────────────────── */
+    .level-row {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .level-badge {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: conic-gradient(var(--accent) 0% 32%, var(--surface2) 32% 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+      box-shadow: var(--glow);
+    }
+    .level-badge::before {
+      content: '';
+      position: absolute;
+      inset: 5px;
+      border-radius: 50%;
+      background: var(--surface);
+    }
+    .level-badge-inner {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    .level-num {
+      display: block;
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .level-word {
+      font-size: 0.55rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+    .level-info { flex: 1; min-width: 200px; }
+    .level-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .level-class {
+      color: var(--accent);
+      font-size: 0.8rem;
+      margin-bottom: 0.6rem;
+    }
+    .xp-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+    .xp-val { color: var(--text); font-weight: 600; }
+
+    /* ── Master progress bar ─────────────────────────── */
+    .master-bar-wrap {
+      position: relative;
+      height: 28px;
+      background: var(--surface2);
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .master-bar-fill {
+      height: 100%;
+      width: 32%;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #0062a3 0%, var(--accent) 60%, #a0f0ff 100%);
+      position: relative;
+      transition: width 1.5s cubic-bezier(.17,.67,.35,1.0);
+      box-shadow: 0 0 20px rgba(0,200,255,0.4);
+    }
+    .master-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 8px; right: 8px; height: 5px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.25);
+    }
+    .master-bar-label {
+      position: absolute;
+      right: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .master-bar-pct {
+      position: absolute;
+      left: 10px; top: 50%; transform: translateY(-50%);
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .score-giant {
+      text-align: center;
+      font-size: 5rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin: 1.5rem 0 0.5rem;
+    }
+    .score-giant span { color: var(--accent); }
+    .score-denom {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Domain grid ─────────────────────────────────── */
+    .domain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .domain-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .domain-card.done { border-color: rgba(0,230,118,0.35); }
+    .domain-card.partial { border-color: rgba(255,145,0,0.35); }
+    .domain-card.locked { opacity: 0.55; }
+
+    .domain-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 0.7rem;
+    }
+    .domain-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .domain-sub {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+    .domain-pct {
+      font-size: 1.1rem;
+      font-weight: 800;
+      min-width: 44px;
+      text-align: right;
+    }
+    .domain-pct.done   { color: var(--green); }
+    .domain-pct.partial{ color: var(--orange); }
+    .domain-pct.locked { color: var(--muted); }
+
+    .mini-bar-wrap {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    .mini-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 1.5s ease;
+    }
+    .fill-green  { background: var(--green); }
+    .fill-orange { background: var(--orange); }
+    .fill-muted  { background: var(--muted); }
+    .fill-accent { background: var(--accent); }
+    .fill-gold   { background: var(--gold); }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      margin-top: 0.6rem;
+    }
+    .chip-done    { background: rgba(0,230,118,0.12);  color: var(--green); }
+    .chip-partial { background: rgba(255,145,0,0.12);  color: var(--orange); }
+    .chip-locked  { background: rgba(74,89,128,0.15);  color: var(--muted); }
+    .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    /* ── Achievements ────────────────────────────────── */
+    .achievement-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .ach {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      width: 90px;
+      text-align: center;
+    }
+    .ach-icon {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      position: relative;
+    }
+    .ach-icon.unlocked { box-shadow: 0 0 16px rgba(255,215,0,0.4); }
+    .ach-icon.locked   { filter: grayscale(1); opacity: 0.4; }
+    .ach-name {
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .ach-icon.locked + .ach-name { color: var(--muted); }
+
+    /* ── Next objectives ─────────────────────────────── */
+    .quest-list { list-style: none; }
+    .quest-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    .quest-list li:last-child { border-bottom: none; }
+    .quest-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .q-hi  { background: rgba(255,61,113,0.15); }
+    .q-med { background: rgba(255,145,0,0.15); }
+    .q-low { background: rgba(0,200,255,0.10); }
+    .quest-body { flex: 1; }
+    .quest-title { font-weight: 600; color: var(--text); }
+    .quest-desc  { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+    .quest-xp    { font-size: 0.7rem; font-weight: 700; color: var(--accent); margin-top: 0.2rem; }
+
+    /* ── Stats row ───────────────────────────────────── */
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      flex: 1;
+      min-width: 120px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 1.8rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--accent);
+    }
+    .stat-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    /* ── Responsive helpers ──────────────────────────── */
+    .max-w { max-width: 900px; margin: 0 auto; }
+    .section-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.8rem;
+    }
+    .updated {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w">
+
+    <!-- ── Hero ───────────────────────────────────────── -->
+    <div class="hero">
+      <p class="hero-label">Mission Log — Multi-Cloud Platform</p>
+      <h1>⬡ GENESIS</h1>
+      <p class="hero-sub">Day 0 Infrastructure-as-Platform · AWS · GCP · Azure</p>
+    </div>
+
+    <!-- ── Master score ───────────────────────────────── -->
+    <div class="card">
+      <p class="card-title">Overall Mission Progress</p>
+
+      <div class="level-row">
+        <div class="level-badge">
+          <div class="level-badge-inner">
+            <span class="level-num">3</span>
+            <span class="level-word">Level</span>
+          </div>
+        </div>
+        <div class="level-info">
+          <div class="level-title">Platform Architect</div>
+          <div class="level-class">CLASS: Cloud Infrastructure Engineer</div>
+          <div class="xp-row">
+            <span>XP Progress</span>
+            <span class="xp-val">3,200 / 10,000 XP</span>
+          </div>
+          <div class="master-bar-wrap">
+            <div class="master-bar-fill" id="masterBar"></div>
+            <span class="master-bar-pct">32%</span>
+            <span class="master-bar-label">Next: Level 4 at 50%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="score-giant"><span>32</span></div>
+      <div class="score-denom">out of 100 mission points</div>
+    </div>
+
+    <!-- ── Stats ──────────────────────────────────────── -->
+    <div class="stats-row" style="margin-bottom:1.5rem">
+      <div class="stat-box">
+        <div class="stat-val">76</div>
+        <div class="stat-label">TF Files Created</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--green)">15</div>
+        <div class="stat-label">Implemented Files</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--gold)">750+</div>
+        <div class="stat-label">Lines of HCL</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--accent2)">3</div>
+        <div class="stat-label">Cloud Providers</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--orange)">9</div>
+        <div class="stat-label">Gov Policies Live</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--red)">0</div>
+        <div class="stat-label">Tests Written</div>
+      </div>
+    </div>
+
+    <!-- ── Domain breakdown ───────────────────────────── -->
+    <div class="card">
+      <p class="card-title">Domain Breakdown</p>
+      <div class="domain-grid">
+
+        <!-- Architecture — 100% -->
+        <div class="domain-card done">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🗺️ Architecture Design</div>
+              <div class="domain-sub">genesis-architecture.md · README · Makefile</div>
+            </div>
+            <div class="domain-pct done">100%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-green" style="width:100%"></div></div>
+          <span class="status-chip chip-done"><span class="chip-dot"></span>Complete</span>
+        </div>
+
+        <!-- Governance Module — 100% -->
+        <div class="domain-card done">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🏛️ Governance Module</div>
+              <div class="domain-sub">AWS SCP · Azure Policies · GCP Org Policies</div>
+            </div>
+            <div class="domain-pct done">100%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-green" style="width:100%"></div></div>
+          <span class="status-chip chip-done"><span class="chip-dot"></span>Complete · 15 files · 750+ lines</span>
+        </div>
+
+        <!-- Bootstrap — 5% -->
+        <div class="domain-card partial">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🔐 Bootstrap Layer</div>
+              <div class="domain-sub">OIDC · State Backends · Root of Trust</div>
+            </div>
+            <div class="domain-pct partial">5%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-orange" style="width:5%"></div></div>
+          <span class="status-chip chip-partial"><span class="chip-dot"></span>Scaffolded · 9 empty files</span>
+        </div>
+
+        <!-- Networking — 0% -->
+        <div class="domain-card locked">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🌐 Networking Module</div>
+              <div class="domain-sub">VPC · VNet · Shared VPC</div>
+            </div>
+            <div class="domain-pct locked">0%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-muted" style="width:0%"></div></div>
+          <span class="status-chip chip-locked"><span class="chip-dot"></span>Locked · Structure only</span>
+        </div>
+
+        <!-- Identity — 0% -->
+        <div class="domain-card locked">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🪪 Identity Module</div>
+              <div class="domain-sub">IAM · RBAC · Entra ID</div>
+            </div>
+            <div class="domain-pct locked">0%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-muted" style="width:0%"></div></div>
+          <span class="status-chip chip-locked"><span class="chip-dot"></span>Locked · Structure only</span>
+        </div>
+
+        <!-- Compute — 0% -->
+        <div class="domain-card locked">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">⚙️ Compute Module</div>
+              <div class="domain-sub">EKS · GKE · AKS · Workload primitives</div>
+            </div>
+            <div class="domain-pct locked">0%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-muted" style="width:0%"></div></div>
+          <span class="status-chip chip-locked"><span class="chip-dot"></span>Locked · Structure only</span>
+        </div>
+
+        <!-- Observability — 0% -->
+        <div class="domain-card locked">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">📊 Observability Module</div>
+              <div class="domain-sub">Logs · Metrics · Grafana · Tracing</div>
+            </div>
+            <div class="domain-pct locked">0%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-muted" style="width:0%"></div></div>
+          <span class="status-chip chip-locked"><span class="chip-dot"></span>Locked · Structure only</span>
+        </div>
+
+        <!-- Environments — 10% -->
+        <div class="domain-card partial">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🌍 Environments</div>
+              <div class="domain-sub">dev · staging · prod × AWS · GCP · Azure</div>
+            </div>
+            <div class="domain-pct partial">10%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-orange" style="width:10%"></div></div>
+          <span class="status-chip chip-partial"><span class="chip-dot"></span>tfvars only · modules not composed</span>
+        </div>
+
+        <!-- Apps GCP — 5% -->
+        <div class="domain-card partial">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🚀 GCP Applications</div>
+              <div class="domain-sub">data-refiner · scan-engine · vuln-detector</div>
+            </div>
+            <div class="domain-pct partial">5%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-orange" style="width:5%"></div></div>
+          <span class="status-chip chip-partial"><span class="chip-dot"></span>Scaffolded · 6 empty files</span>
+        </div>
+
+        <!-- Apps AWS — 0% -->
+        <div class="domain-card locked">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">☁️ AWS Applications</div>
+              <div class="domain-sub">cre-api · market-signals · pricing-engine</div>
+            </div>
+            <div class="domain-pct locked">0%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-muted" style="width:0%"></div></div>
+          <span class="status-chip chip-locked"><span class="chip-dot"></span>Empty dirs · Not started</span>
+        </div>
+
+        <!-- Apps Azure — 0% -->
+        <div class="domain-card locked">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🔷 Azure Applications</div>
+              <div class="domain-sub">compliance-service · insurance-api · risk-model</div>
+            </div>
+            <div class="domain-pct locked">0%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-muted" style="width:0%"></div></div>
+          <span class="status-chip chip-locked"><span class="chip-dot"></span>Empty dirs · Not started</span>
+        </div>
+
+        <!-- CI/CD — 5% -->
+        <div class="domain-card partial">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">⚡ CI/CD Pipelines</div>
+              <div class="domain-sub">GitHub Actions · terraform-plan · terraform-apply</div>
+            </div>
+            <div class="domain-pct partial">5%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-orange" style="width:5%"></div></div>
+          <span class="status-chip chip-partial"><span class="chip-dot"></span>Workflow files exist · Content empty</span>
+        </div>
+
+        <!-- Scripts — 0% -->
+        <div class="domain-card locked">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🛠️ Operational Scripts</div>
+              <div class="domain-sub">bootstrap.sh · deploy.sh</div>
+            </div>
+            <div class="domain-pct locked">0%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-muted" style="width:0%"></div></div>
+          <span class="status-chip chip-locked"><span class="chip-dot"></span>Files created · Empty</span>
+        </div>
+
+        <!-- Tests — 0% -->
+        <div class="domain-card locked">
+          <div class="domain-header">
+            <div>
+              <div class="domain-name">🧪 Terratest Suite</div>
+              <div class="domain-sub">Go tests · Infrastructure validation</div>
+            </div>
+            <div class="domain-pct locked">0%</div>
+          </div>
+          <div class="mini-bar-wrap"><div class="mini-bar-fill fill-muted" style="width:0%"></div></div>
+          <span class="status-chip chip-locked"><span class="chip-dot"></span>Not started · 0 Go files</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Achievements ────────────────────────────────── -->
+    <div class="card">
+      <p class="card-title">Achievements</p>
+      <div class="achievement-grid">
+
+        <div class="ach">
+          <div class="ach-icon unlocked" style="background:linear-gradient(135deg,#1a2a4a,#0d1a32)">🗺️</div>
+          <div class="ach-name">Architect's Codex</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon unlocked" style="background:linear-gradient(135deg,#1a2a1a,#0d220d)">🏛️</div>
+          <div class="ach-name">Law Bringer</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon unlocked" style="background:linear-gradient(135deg,#2a2a0d,#1a1a05)">⚙️</div>
+          <div class="ach-name">Scaffolding Master</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon unlocked" style="background:linear-gradient(135deg,#2a1a2a,#1a0d1a)">☁️</div>
+          <div class="ach-name">Cloud Trinity</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon unlocked" style="background:linear-gradient(135deg,#1a2a2a,#0a1a1a)">🧱</div>
+          <div class="ach-name">Module Forger</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon locked" style="background:var(--surface2)">🔐</div>
+          <div class="ach-name">Root of Trust</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon locked" style="background:var(--surface2)">🌐</div>
+          <div class="ach-name">Network Weaver</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon locked" style="background:var(--surface2)">🪪</div>
+          <div class="ach-name">Identity Keeper</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon locked" style="background:var(--surface2)">📊</div>
+          <div class="ach-name">Eyes Everywhere</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon locked" style="background:var(--surface2)">🚀</div>
+          <div class="ach-name">Ship It</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon locked" style="background:var(--surface2)">⚡</div>
+          <div class="ach-name">Automate Everything</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon locked" style="background:var(--surface2)">🧪</div>
+          <div class="ach-name">Trust but Verify</div>
+        </div>
+
+        <div class="ach">
+          <div class="ach-icon locked" style="background:var(--surface2)">🏆</div>
+          <div class="ach-name">Genesis Complete</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Next Objectives ─────────────────────────────── -->
+    <div class="card">
+      <p class="card-title">Next Objectives — Priority Queue</p>
+      <ul class="quest-list">
+
+        <li>
+          <div class="quest-icon q-hi">🔥</div>
+          <div class="quest-body">
+            <div class="quest-title">Implement Bootstrap Layer (All 3 Clouds)</div>
+            <div class="quest-desc">OIDC federation, remote state backends (S3 / GCS / Azure Blob), KMS keys, audit logging. Most critical blocker — nothing else can be tested without it.</div>
+            <div class="quest-xp">+1,200 XP · Unlocks: Root of Trust achievement · Unblocks: ALL environment deploys</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-hi">🔥</div>
+          <div class="quest-body">
+            <div class="quest-title">Implement CI/CD Pipelines</div>
+            <div class="quest-desc">Fill terraform-plan.yml and terraform-apply.yml with OIDC auth, matrix strategy (dev/staging/prod × cloud), and plan/apply steps.</div>
+            <div class="quest-xp">+800 XP · Unlocks: Automate Everything achievement</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-med">⚠️</div>
+          <div class="quest-body">
+            <div class="quest-title">Implement Networking Module (AWS, GCP, Azure)</div>
+            <div class="quest-desc">VPC with public/private subnets, Shared VPC (GCP), VNet + subnets (Azure). The foundation of every environment composition.</div>
+            <div class="quest-xp">+900 XP · Unlocks: Network Weaver achievement</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-med">⚠️</div>
+          <div class="quest-body">
+            <div class="quest-title">Implement Identity Module (AWS, GCP, Azure)</div>
+            <div class="quest-desc">IAM roles/policies (AWS), Workload Identity (GCP), Managed Identities + Entra ID RBAC (Azure).</div>
+            <div class="quest-xp">+900 XP · Unlocks: Identity Keeper achievement</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-med">⚠️</div>
+          <div class="quest-body">
+            <div class="quest-title">Compose Environment Modules (dev → staging → prod)</div>
+            <div class="quest-desc">Wire modules into environment main.tf files for all 3 clouds. Currently all files are empty despite tfvars being ready.</div>
+            <div class="quest-xp">+700 XP · Unlocks: Ship It achievement prerequisite</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-med">⚠️</div>
+          <div class="quest-body">
+            <div class="quest-title">Implement Compute Module (AWS, GCP, Azure)</div>
+            <div class="quest-desc">EKS node groups / GKE node pools / AKS node pools with autoscaling, spot instance support, and workload identity binding.</div>
+            <div class="quest-xp">+900 XP</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-low">💡</div>
+          <div class="quest-body">
+            <div class="quest-title">Implement Observability Module</div>
+            <div class="quest-desc">Cloud logging sinks, metric exports, Grafana datasource config (grafana-datasources.yaml already staged), alerting baselines.</div>
+            <div class="quest-xp">+600 XP · Unlocks: Eyes Everywhere achievement</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-low">💡</div>
+          <div class="quest-body">
+            <div class="quest-title">Build GCP App Configurations</div>
+            <div class="quest-desc">data-refiner, scan-engine, vuln-detector — fill app.yaml + main.tf with Cloud Run / GKE deployment config.</div>
+            <div class="quest-xp">+400 XP</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-low">💡</div>
+          <div class="quest-body">
+            <div class="quest-title">Build AWS + Azure App Configurations</div>
+            <div class="quest-desc">cre-api, market-signals, pricing-engine (AWS) and compliance-service, insurance-api, risk-model (Azure). Currently empty directories.</div>
+            <div class="quest-xp">+600 XP</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-low">💡</div>
+          <div class="quest-body">
+            <div class="quest-title">Write Terratest Suite</div>
+            <div class="quest-desc">Go tests for module contracts — validate networking CIDR outputs, identity role bindings, governance policy existence. 0 Go files currently.</div>
+            <div class="quest-xp">+500 XP · Unlocks: Trust but Verify achievement</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="quest-icon q-low">💡</div>
+          <div class="quest-body">
+            <div class="quest-title">Implement bootstrap.sh + deploy.sh Scripts</div>
+            <div class="quest-desc">Both files are empty. Implement init-state, OIDC setup wrappers, and deploy orchestration to match Makefile targets.</div>
+            <div class="quest-xp">+300 XP</div>
+          </div>
+        </li>
+
+      </ul>
+    </div>
+
+    <!-- ── Level roadmap ──────────────────────────────── -->
+    <div class="card">
+      <p class="card-title">Level Roadmap</p>
+      <div class="domain-grid" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr))">
+        <div class="domain-card done" style="text-align:center; padding:1.2rem 0.8rem">
+          <div style="font-size:1.6rem">🌱</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--green);margin:0.3rem 0">Level 1 — Seedling</div>
+          <div style="font-size:0.65rem;color:var(--muted)">0–10%</div>
+          <div style="font-size:0.65rem;color:var(--green);margin-top:0.3rem">✓ Cleared</div>
+        </div>
+        <div class="domain-card done" style="text-align:center; padding:1.2rem 0.8rem">
+          <div style="font-size:1.6rem">🔧</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--green);margin:0.3rem 0">Level 2 — Builder</div>
+          <div style="font-size:0.65rem;color:var(--muted)">10–25%</div>
+          <div style="font-size:0.65rem;color:var(--green);margin-top:0.3rem">✓ Cleared</div>
+        </div>
+        <div class="domain-card partial" style="text-align:center; padding:1.2rem 0.8rem; border-color:rgba(0,200,255,0.4)">
+          <div style="font-size:1.6rem">🗺️</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--accent);margin:0.3rem 0">Level 3 — Architect</div>
+          <div style="font-size:0.65rem;color:var(--muted)">25–50%</div>
+          <div style="font-size:0.65rem;color:var(--accent);margin-top:0.3rem">▶ YOU ARE HERE</div>
+        </div>
+        <div class="domain-card locked" style="text-align:center; padding:1.2rem 0.8rem">
+          <div style="font-size:1.6rem">🔐</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);margin:0.3rem 0">Level 4 — Operator</div>
+          <div style="font-size:0.65rem;color:var(--muted)">50–75%</div>
+          <div style="font-size:0.65rem;color:var(--muted);margin-top:0.3rem">Locked</div>
+        </div>
+        <div class="domain-card locked" style="text-align:center; padding:1.2rem 0.8rem">
+          <div style="font-size:1.6rem">🏆</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);margin:0.3rem 0">Level 5 — Genesis</div>
+          <div style="font-size:0.65rem;color:var(--muted)">75–100%</div>
+          <div style="font-size:0.65rem;color:var(--muted);margin-top:0.3rem">Locked</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="updated">Last updated: May 6, 2026 · Genesis Platform v0.3.2-alpha</p>
+
+  </div>
+
+  <script>
+    // Animate bars on load
+    window.addEventListener('load', () => {
+      document.querySelectorAll('.mini-bar-fill').forEach(el => {
+        const w = el.style.width;
+        el.style.width = '0';
+        setTimeout(() => { el.style.width = w; }, 100);
+      });
+    });
+  </script>
+</body>
+</html>

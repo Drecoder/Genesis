@@ -1,59 +1,28 @@
-resource "azurerm_policy_definition" "deny_public_network" {
-  name         = "deny-public-network"
+# C:\WS\genesis\modules\governance\azure\initiatives\platform_baseline.tf
+resource "azurerm_policy_set_definition" "platform_baseline" {
+  name         = "platform-governance-baseline"
+  display_name = "Global Platform Governance Baseline"
   policy_type  = "Custom"
-  mode         = "Indexed"
-  display_name = "Deny Public Network Exposure"
+  description  = "Enforces decentralized security, compliance, and metadata standards across all DUs"
 
-  description = "Prevents deployment of resources with public network access enabled"
+  # Standardized Policy References
+  policy_definition_reference {
+    policy_definition_id = azurerm_policy_definition.deny_public_network.id
+    reference_id         = "deny_public_network"
+  }
 
-  policy_rule = jsonencode({
-    if = {
-      anyOf = [
+  policy_definition_reference {
+    policy_definition_id = azurerm_policy_definition.enforce_encryption.id
+    reference_id         = "enforce_encryption"
+  }
 
-        # 🚫 Public IP resources
-        {
-          field  = "type"
-          equals = "Microsoft.Network/publicIPAddresses"
-        },
-
-        # 🚫 Storage accounts with public access enabled
-        {
-          allOf = [
-            {
-              field  = "type"
-              equals = "Microsoft.Storage/storageAccounts"
-            },
-            {
-              field  = "Microsoft.Storage/storageAccounts/publicNetworkAccess"
-              equals = "Enabled"
-            }
-          ]
-        },
-
-        # 🚫 SQL servers with public access enabled
-        {
-          allOf = [
-            {
-              field  = "type"
-              equals = "Microsoft.Sql/servers"
-            },
-            {
-              field  = "Microsoft.Sql/servers/publicNetworkAccess"
-              equals = "Enabled"
-            }
-          ]
-        }
-
-      ]
-    }
-
-    then = {
-      effect = "deny"
-    }
-  })
+  policy_definition_reference {
+    policy_definition_id = azurerm_policy_definition.enforce_tagging.id
+    reference_id         = "enforce_tagging"
+  }
 
   metadata = jsonencode({
-    category = "Network Security"
+    category = "Platform Governance"
     version  = "1.0.0"
   })
 }
