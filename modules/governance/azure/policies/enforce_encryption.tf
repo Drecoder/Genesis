@@ -1,28 +1,43 @@
-# C:\WS\genesis\modules\governance\azure\initiatives\platform_baseline.tf
-resource "azurerm_policy_set_definition" "platform_baseline" {
-  name         = "platform-governance-baseline"
-  display_name = "Global Platform Governance Baseline"
+resource "azurerm_policy_definition" "enforce_encryption" {
+  name         = "enforce-encryption"
   policy_type  = "Custom"
-  description  = "Enforces decentralized security, compliance, and metadata standards across all DUs"
+  mode         = "Indexed"
+  display_name = "Enforce Encryption at Rest and Transit"
+  description  = "Ensures decentralized workloads use encrypted storage and secure transport (TLS)."
 
-  # Standardized Policy References
-  policy_definition_reference {
-    policy_definition_id = azurerm_policy_definition.deny_public_network.id
-    reference_id         = "deny_public_network"
-  }
-
-  policy_definition_reference {
-    policy_definition_id = azurerm_policy_definition.enforce_encryption.id
-    reference_id         = "enforce_encryption"
-  }
-
-  policy_definition_reference {
-    policy_definition_id = azurerm_policy_definition.enforce_tagging.id
-    reference_id         = "enforce_tagging"
-  }
+  policy_rule = jsonencode({
+    if = {
+      anyOf = [
+        # 🚫 Deny Storage Accounts without HTTPS
+        {
+          allOf = [
+            { field = "type", equals = "Microsoft.Storage/storageAccounts" },
+            { field = "Microsoft.Storage/storageAccounts/supportsHttpsTrafficOnly", equals = "false" }
+          ]
+        },
+        # 🚫 Deny SQL Servers without Transparent Data Encryption (TDE)
+        {
+          allOf = [
+            { field = "type", equals = "Microsoft.Sql/servers/databases" },
+            { field = "Microsoft.Sql/servers/databases/transparentDataEncryption", equals = "Disabled" }
+          ]
+        },
+        # 🚫 Deny Unencrypted Managed Disks
+        {
+          allOf = [
+            { field = "type", equals = "Microsoft.Compute/disks" },
+            { field = "Microsoft.Compute/disks/encryption.type", notEquals = "EncryptionAtRestWithCustomerKey" }
+          ]
+        }
+      ]
+    }
+    then = {
+      effect = "deny"
+    }
+  })
 
   metadata = jsonencode({
-    category = "Platform Governance"
+    category = "Data Security"
     version  = "1.0.0"
   })
 }
