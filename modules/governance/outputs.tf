@@ -1,60 +1,32 @@
-############################################
-# Governance Module - Aggregated Outputs
-# Exposes cross-cloud governance contract
-############################################
+###########################################################
+# Genesis Global Governance - Output Contract
+###########################################################
 
-# -------------------------------
-# Active Cloud Domains
-# -------------------------------
-output "active_clouds" {
-  description = "List of enabled cloud governance domains"
-  value = compact([
-    "gcp",
-    var.enable_aws ? "aws" : "",
-    var.enable_azure ? "azure" : ""
-  ])
+output "aws_governance_active" {
+  description = "Boolean indicating if AWS Service Control Policies are active"
+  value       = var.aws_enabled ? true : false
 }
 
-# -------------------------------
-# Governance Scope (GCP is primary workload plane, but not a control plane)
-# -------------------------------
-output "gcp_scope" {
-  description = "GCP governance enforcement scope"
-  value       = module.gcp_governance.governance_scope
+output "azure_governance_active" {
+  description = "Boolean indicating if Azure Policy Initiatives are active"
+  value       = var.azure_enabled ? true : false
 }
 
-# -------------------------------
-# AWS Scope (if enabled)
-# -------------------------------
-output "aws_scope" {
-  description = "AWS governance scope (if enabled)"
-  value       = try(module.aws_governance[0].governance_scope, null)
+output "gcp_governance_active" {
+  description = "Boolean indicating if GCP Organization Policies are active"
+  value       = var.gcp_enabled ? true : false
 }
 
-# -------------------------------
-# Azure Scope (if enabled)
-# -------------------------------
-output "azure_scope" {
-  description = "Azure governance scope (if enabled)"
-  value       = try(module.azure_governance[0].governance_scope, null)
+output "global_enforcement_mode" {
+  description = "The unified enforcement mode across the platform (enforce/audit)"
+  value       = var.enforcement_mode
 }
 
-# -------------------------------
-# Policy Domain Contract
-# -------------------------------
-output "governance_domains" {
-  description = "Standard governance domains enforced across all clouds"
-  value = [
-    "identity_security",
-    "network_security",
-    "data_protection"
-  ]
-}
-
-# -------------------------------
-# Primary Execution Plane Indicator
-# -------------------------------
-output "primary_execution_plane" {
-  description = "Indicates where highest workload density exists (not a control plane)"
-  value       = "gcp"
+output "triple_cloud_compliance_report" {
+  description = "A structured map of all applied policy IDs for cross-cloud auditing"
+  value = {
+    aws   = var.aws_enabled ? module.aws_governance.policy_ids : []
+    azure = var.azure_enabled ? module.azure_governance.policy_ids : []
+    gcp   = var.gcp_enabled ? module.gcp_governance.policy_ids : []
+  }
 }

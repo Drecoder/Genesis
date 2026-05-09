@@ -1,54 +1,33 @@
-############################################
-# Governance Module - Federated Multi-Cloud
-# Shared Policy Standard Across Independent VPCs
-############################################
+###########################################################
+# Genesis Global Governance Orchestrator
+# This module aggregates cloud-specific policy baselines
+###########################################################
 
-# -------------------------------
-# GCP Governance (Business Line A - High Activity)
-# -------------------------------
-module "gcp_governance" {
-  source = "./gcp"
-
-  project_id = var.gcp_project_id
-  org_id     = var.org_id
-  folder_id  = var.folder_id
-}
-
-# -------------------------------
-# AWS Governance (Business Line B - Independent Domain)
-# -------------------------------
+# 1. AWS Governance (Service Control Policies)
 module "aws_governance" {
   source = "./aws"
-
-  count = var.enable_aws ? 1 : 0
-
-  account_id = var.aws_account_id
+  
+  enabled            = var.aws_enabled
+  org_id             = var.aws_org_id
+  allowed_regions    = var.aws_allowed_regions
+  enforcement_mode   = var.enforcement_mode
 }
 
-# -------------------------------
-# Azure Governance (Business Line C - Independent Domain)
-# -------------------------------
+# 2. Azure Governance (Policy Initiatives)
 module "azure_governance" {
   source = "./azure"
-
-  count = var.enable_azure ? 1 : 0
-
-  subscription_id = var.azure_subscription_id
+  
+  enabled            = var.azure_enabled
+  management_group   = var.azure_management_group_id
+  enforcement_mode   = var.enforcement_mode
 }
 
-# -------------------------------
-# Governance Standardization Layer
-# -------------------------------
-locals {
-  governance_domains = [
-    "identity_security",
-    "network_security",
-    "data_protection"
-  ]
-
-  active_clouds = compact([
-    "gcp",
-    var.enable_aws ? "aws" : "",
-    var.enable_azure ? "azure" : ""
-  ])
+# 3. GCP Governance (Org Policy Constraints)
+module "gcp_governance" {
+  source = "./gcp"
+  
+  enabled            = var.gcp_enabled
+  org_id             = var.gcp_org_id
+  allowed_locations  = var.gcp_allowed_locations
+  enforcement_mode   = var.enforcement_mode
 }
