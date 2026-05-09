@@ -1,68 +1,58 @@
-############################################
-# GCP Org Policies - Network Restrictions
-# Controls ingress/egress and exposure
-############################################
+###########################################################
+# GCP Network Restriction Policies (Genesis Universal)
+###########################################################
 
-# -------------------------------
-# Disable External IPs (if not already in baseline)
-# -------------------------------
-resource "google_org_policy_policy" "no_external_ips" {
-  name   = "${local.parent}/policies/compute.vmExternalIpAccess"
-  parent = local.parent
+# 1. 🚫 Hygiene: Skip Default Network Creation
+# Matches the "clean slate" invariant. No automatic 'default' networks in new projects.
+resource "google_organization_policy" "skip_default_network" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/compute.skipDefaultNetworkCreation"
 
-  spec {
-    rules {
-      enforce = true
+  boolean_policy {
+    enforced = true
+  }
+}
+
+# 2. 🚫 Topology: Restrict Shared VPC Host Projects
+# Ensures only designated 'Hub' projects can act as Shared VPC hosts.
+resource "google_organization_policy" "restrict_shared_vpc_host" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/compute.restrictSharedVpcHostProjects"
+
+  list_policy {
+    deny {
+      all = true
     }
   }
 }
 
-# -------------------------------
-# Restrict VPC Peering (prevent uncontrolled lateral movement)
-# -------------------------------
-resource "google_org_policy_policy" "restrict_vpc_peering" {
-  name   = "${local.parent}/policies/compute.restrictVpcPeering"
-  parent = local.parent
+# 3. 🚫 Topology: Restrict VPC Peering
+# Prevents DUs from creating unauthorized side-channels (peering) between spokes.
+# Forces all traffic through the central Hub (Firewall/Inspection).
+resource "google_organization_policy" "restrict_vpc_peering" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/compute.restrictVpcPeering"
 
-  spec {
-    rules {
-      enforce = true
+  list_policy {
+    deny {
+      all = true
     }
   }
 }
 
-# -------------------------------
-# Restrict Shared VPC Host Projects
-# -------------------------------
-resource "google_org_policy_policy" "restrict_shared_vpc" {
-  name   = "${local.parent}/policies/compute.restrictSharedVpcHostProjects"
-  parent = local.parent
+# 4. 🚫 Security: Disable IP Forwarding
+# Prevents VMs from acting as unmanaged routers/NAT gateways within a DU.
+resource "google_organization_policy" "disable_ip_forwarding" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/compute.vmCanIpForward"
 
-  spec {
-    rules {
-      values {
-        allowed_values = [
-          "projects/network-host-prod"
-        ]
-      }
-    }
-  }
-}
-
-# -------------------------------
-# Restrict Load Balancer Types (example control)
-# -------------------------------
-resource "google_org_policy_policy" "restrict_lb_types" {
-  name   = "${local.parent}/policies/compute.restrictLoadBalancerCreationForTypes"
-  parent = local.parent
-
-  spec {
-    rules {
-      values {
-        denied_values = [
-          "EXTERNAL"
-        ]
-      }
+  list_policy {
+    deny {
+      all = true
     }
   }
 }

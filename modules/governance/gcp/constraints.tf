@@ -1,83 +1,37 @@
-############################################
-# GCP Organization Policy Constraints
-# Enforces platform-wide governance guardrails
-############################################
-
-# -------------------------------
-# Variables
-# -------------------------------
-variable "org_id" {
-  description = "GCP Organization ID (preferred for global enforcement)"
-  type        = string
-  default     = null
-}
-
-variable "folder_id" {
-  description = "GCP Folder ID (used if org_id is not set)"
-  type        = string
-  default     = null
-}
+###########################################################
+# GCP Constraints Mapping (Genesis Technical Registry)
+###########################################################
 
 locals {
-  parent = var.org_id != null ? "organizations/${var.org_id}" : "folders/${var.folder_id}"
-}
-
-# -------------------------------
-# Disable External IPs on VMs
-# -------------------------------
-resource "google_org_policy_policy" "disable_external_ip" {
-  name   = "${local.parent}/policies/compute.vmExternalIpAccess"
-  parent = local.parent
-
-  spec {
-    rules {
-      enforce = true
-    }
+  # ---------------------------------------------------------
+  # Network Invariants
+  # ---------------------------------------------------------
+  network_constraints = {
+    disable_external_ips      = "constraints/compute.vmExternalIpAccess"
+    skip_default_network      = "constraints/compute.skipDefaultNetworkCreation"
+    restrict_shared_vpc_host  = "constraints/compute.restrictSharedVpcHostProjects"
+    restrict_vpc_peering      = "constraints/compute.restrictVpcPeering"
+    disable_ip_forwarding     = "constraints/compute.vmCanIpForward"
   }
-}
 
-# -------------------------------
-# Restrict Resource Locations
-# -------------------------------
-resource "google_org_policy_policy" "allowed_locations" {
-  name   = "${local.parent}/policies/gcp.resourceLocations"
-  parent = local.parent
-
-  spec {
-    rules {
-      values {
-        allowed_values = [
-          "in:us-locations" # restrict to US regions
-        ]
-      }
-    }
+  # ---------------------------------------------------------
+  # Identity & Trust Invariants
+  # ---------------------------------------------------------
+  identity_constraints = {
+    domain_restricted_sharing = "constraints/iam.allowedPolicyMemberDomains"
+    disable_sa_creation       = "constraints/iam.disableServiceAccountCreation"
+    disable_sa_key_creation   = "constraints/iam.disableServiceAccountKeyCreation"
+    disable_sa_key_upload     = "constraints/iam.disableServiceAccountKeyUpload"
+    restrict_auth_types       = "constraints/iam.restrictServiceAccountUsage"
   }
-}
 
-# -------------------------------
-# Disable Service Account Key Creation
-# -------------------------------
-resource "google_org_policy_policy" "disable_sa_keys" {
-  name   = "${local.parent}/policies/iam.disableServiceAccountKeyCreation"
-  parent = local.parent
-
-  spec {
-    rules {
-      enforce = true
-    }
-  }
-}
-
-# -------------------------------
-# Require OS Login (SSH control)
-# -------------------------------
-resource "google_org_policy_policy" "require_os_login" {
-  name   = "${local.parent}/policies/compute.requireOsLogin"
-  parent = local.parent
-
-  spec {
-    rules {
-      enforce = true
-    }
+  # ---------------------------------------------------------
+  # Data & Residency Invariants
+  # ---------------------------------------------------------
+  data_constraints = {
+    location_restriction      = "constraints/gcp.resourceLocations"
+    restrict_non_cmek_services = "constraints/gcp.restrictNonCmekServices"
+    bucket_public_access      = "constraints/storage.publicAccessPrevention"
+    uniform_bucket_level      = "constraints/storage.uniformBucketLevelAccess"
   }
 }

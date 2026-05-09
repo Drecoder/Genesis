@@ -1,61 +1,26 @@
-############################################
-# GCP Governance Module - Input Contract
-############################################
-
 # -------------------------------
-# Project Context (for provider binding)
+# Service Account Control
 # -------------------------------
-variable "project_id" {
-  description = "GCP Project ID used for provider context (required for provider initialization)"
-  type        = string
+variable "block_service_account_creation" {
+  description = "If true, prevents the creation of new Service Accounts to mandate OIDC/Workload Identity usage"
+  type        = bool
+  default     = true
 }
 
 # -------------------------------
-# Organization Scope
+# Encryption Contract (CMEK)
 # -------------------------------
-variable "org_id" {
-  description = "GCP Organization ID for org-level policy enforcement"
-  type        = string
-  default     = null
+variable "require_cmek_for_all_resources" {
+  description = "Forces the use of Customer Managed Encryption Keys (CMEK) for all supported resources (Storage, Compute, SQL)"
+  type        = bool
+  default     = true
 }
 
 # -------------------------------
-# Folder Scope (alternative to org-level enforcement)
+# Public Access Prevention
 # -------------------------------
-variable "folder_id" {
-  description = "GCP Folder ID for scoped policy enforcement when org_id is not used"
-  type        = string
-  default     = null
-}
-
-# -------------------------------
-# Enforcement Mode
-# -------------------------------
-variable "enforcement_mode" {
-  description = "Controls whether policies are enforced or audited only"
-  type        = string
-  default     = "enforce"
-
-  validation {
-    condition     = contains(["enforce", "audit"], var.enforcement_mode)
-    error_message = "enforcement_mode must be either 'enforce' or 'audit'."
-  }
-}
-
-# -------------------------------
-# Allowed Locations (Data Residency Control)
-# -------------------------------
-variable "allowed_locations" {
-  description = "List of allowed GCP locations for data residency enforcement"
-  type        = list(string)
-  default     = ["US"]
-}
-
-# -------------------------------
-# Allowed IAM Domains
-# -------------------------------
-variable "allowed_iam_domains" {
-  description = "List of allowed domains for IAM binding"
-  type        = list(string)
-  default     = []
+variable "block_external_ip_access" {
+  description = "If true, enforces a constraint that prevents VMs from having external/public IP addresses"
+  type        = bool
+  default     = true
 }

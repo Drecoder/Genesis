@@ -1,64 +1,71 @@
-############################################
-# GCP Org Policies - Identity Security
-# Controls IAM, authentication, and key usage
-############################################
+###########################################################
+# GCP Organization Policy Baseline (Genesis Universal)
+###########################################################
 
-# -------------------------------
-# Disable Service Account Key Creation
-# -------------------------------
-resource "google_org_policy_policy" "disable_sa_keys" {
-  name   = "${local.parent}/policies/iam.disableServiceAccountKeyCreation"
-  parent = local.parent
+# 1. 🚫 Network: Disable External IP (Matches Azure No-Public-IP)
+resource "google_organization_policy" "disable_external_ips" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/compute.vmExternalIpAccess"
 
-  spec {
-    rules {
-      enforce = true
+  list_policy {
+    deny {
+      all = true
     }
   }
 }
 
-# -------------------------------
-# Disable Service Account Key Upload
-# -------------------------------
-resource "google_org_policy_policy" "disable_sa_key_upload" {
-  name   = "${local.parent}/policies/iam.disableServiceAccountKeyUpload"
-  parent = local.parent
+# 2. 🚫 Identity: Domain Restricted Sharing (Matches AWS Block-Local-IAM)
+# Ensures only identities from approved domains can be granted IAM roles.
+resource "google_organization_policy" "domain_restricted_sharing" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/iam.allowedPolicyMemberDomains"
 
-  spec {
-    rules {
-      enforce = true
+  list_policy {
+    allow {
+      values = var.allowed_iam_domains
     }
   }
 }
 
-# -------------------------------
-# Restrict IAM Member Domains
-# -------------------------------
-resource "google_org_policy_policy" "restrict_iam_domains" {
-  name   = "${local.parent}/policies/iam.allowedPolicyMemberDomains"
-  parent = local.parent
+# 3. 🚫 Residency: Resource Location Restriction (Matches AWS Regional Lockdown)
+resource "google_organization_policy" "location_restriction" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/gcp.resourceLocations"
 
-  spec {
-    rules {
-      values {
-        allowed_values = [
-          "your-company.com"
-        ]
-      }
+  list_policy {
+    allow {
+      values = var.allowed_locations
     }
   }
 }
 
-# -------------------------------
-# Enforce OS Login (centralized SSH control)
-# -------------------------------
-resource "google_org_policy_policy" "require_os_login" {
-  name   = "${local.parent}/policies/compute.requireOsLogin"
-  parent = local.parent
+# 4. 🚫 Trust: Disable Service Account Creation (Forces OIDC Usage)
+# Prevents DUs from creating shadow identities outside the Bootstrap trust layer.
+resource "google_organization_policy" "disable_sa_creation" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/iam.disableServiceAccountCreation"
 
-  spec {
-    rules {
-      enforce = true
+  boolean_policy {
+    enforced = var.enforcement_mode == "enforce" ? true : false
+  }
+}
+
+# 5. 🚫 Data: Restrict Service Usage (Matches Azure CMEK/Encryption)
+# Requires use of Customer Managed Encryption Keys for specific services.
+resource "google_organization_policy" "require_cmek" {
+  count      = var.require_cmek_for_all_resources ? 1 : 0
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/gcp.restrictNonCmekServices"
+
+  # This logic is often scoped; for a baseline, we deny non-compliant services
+  list_policy {
+    deny {
+      all = true
     }
   }
 }

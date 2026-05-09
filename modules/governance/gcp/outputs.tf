@@ -1,41 +1,28 @@
 ############################################
-# GCP Governance Module Outputs
-# Exposes enforcement context to platform layers
+# GCP Governance Module - Output Contract
 ############################################
 
-# -------------------------------
-# Governance Scope (Org or Folder)
-# -------------------------------
-output "governance_scope" {
-  description = "The parent scope where governance policies are applied"
-  value       = local.parent
-}
-
-# -------------------------------
-# Organization ID (if used)
-# -------------------------------
-output "org_id" {
-  description = "GCP Organization ID used for policy enforcement"
-  value       = var.org_id
-}
-
-# -------------------------------
-# Folder ID (if used)
-# -------------------------------
-output "folder_id" {
-  description = "GCP Folder ID used for scoped policy enforcement"
-  value       = var.folder_id
-}
-
-# -------------------------------
-# Policy Coverage Indicator
-# -------------------------------
-output "enabled_policy_domains" {
-  description = "Governance domains enabled in this module"
+output "policy_ids" {
+  description = "The list of organization policy constraints applied by this module"
   value = [
-    "constraints",
-    "network_security",
-    "data_protection",
-    "identity_security"
+    google_organization_policy.disable_external_ips.constraint,
+    google_organization_policy.domain_restricted_sharing.constraint,
+    google_organization_policy.location_restriction.constraint,
+    google_organization_policy.disable_sa_creation.constraint
   ]
+}
+
+output "enforcement_status" {
+  description = "Returns the current enforcement mode (enforce vs audit) for downstream validation"
+  value       = var.enforcement_mode
+}
+
+output "governance_scope" {
+  description = "The target ID (Org or Folder) where the platform baseline is enforced"
+  value       = coalesce(var.org_id, var.folder_id)
+}
+
+output "baseline_version" {
+  description = "The version of the Genesis platform baseline applied"
+  value       = "1.0.0"
 }

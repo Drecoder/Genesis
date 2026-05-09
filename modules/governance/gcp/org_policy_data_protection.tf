@@ -1,64 +1,60 @@
-############################################
-# GCP Org Policies - Data Protection Domain
-# Prevents data exfiltration & weak controls
-############################################
+###########################################################
+# GCP Data Protection Policies (Genesis Universal)
+###########################################################
 
-# -------------------------------
-# Require CMEK (Customer-managed encryption)
-# -------------------------------
-resource "google_org_policy_policy" "require_cmek" {
-  name   = "${local.parent}/policies/gcp.requireCmekForDiskCreation"
-  parent = local.parent
+# 1. 🚫 Privacy: Enforce Public Access Prevention (Cloud Storage)
+# Matches the Azure "Deny Public Endpoint" standard.
+# Prevents any bucket from being made public at the resource level.
+resource "google_organization_policy" "enforce_public_access_prevention" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/storage.publicAccessPrevention"
 
-  spec {
-    rules {
-      enforce = true
+  boolean_policy {
+    enforced = true
+  }
+}
+
+# 2. 🚫 Security: Restrict Non-CMEK Services
+# Matches the Azure "Mandatory CMK" invariant.
+# Ensures that resources (like Disks or Cloud SQL) cannot be created 
+# unless they are protected by a Customer-Managed Encryption Key.
+resource "google_organization_policy" "restrict_non_cmek_services" {
+  count      = var.require_cmek_for_all_resources ? 1 : 0
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/gcp.restrictNonCmekServices"
+
+  list_policy {
+    deny {
+      all = true
     }
   }
 }
 
-# -------------------------------
-# Restrict Cloud Storage Public Access
-# -------------------------------
-resource "google_org_policy_policy" "no_public_buckets" {
-  name   = "${local.parent}/policies/storage.publicAccessPrevention"
-  parent = local.parent
+# 3. 🚫 Security: Uniform Bucket-Level Access
+# Ensures that IAM is the only way to control access to data, 
+# disabling the legacy (and often risky) ACL system.
+resource "google_organization_policy" "enforce_uniform_bucket_level_access" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/storage.uniformBucketLevelAccess"
 
-  spec {
-    rules {
-      enforce = true
-    }
+  boolean_policy {
+    enforced = true
   }
 }
 
-# -------------------------------
-# Disable Uniform Bucket-Level Access OFF (force it ON)
-# -------------------------------
-resource "google_org_policy_policy" "uniform_bucket_access" {
-  name   = "${local.parent}/policies/storage.uniformBucketLevelAccess"
-  parent = local.parent
+# 4. 🚫 Residency: Restrict Resource Usage
+# Re-enforces the "Residency" invariant specifically for data-bearing services.
+resource "google_organization_policy" "data_residency" {
+  org_id     = var.org_id
+  folder_id  = var.folder_id
+  constraint = "constraints/gcp.resourceLocations"
 
-  spec {
-    rules {
-      enforce = true
-    }
-  }
-}
-
-# -------------------------------
-# Restrict BigQuery Data Location
-# -------------------------------
-resource "google_org_policy_policy" "bq_location_restriction" {
-  name   = "${local.parent}/policies/bigquery.allowedLocations"
-  parent = local.parent
-
-  spec {
-    rules {
-      values {
-        allowed_values = [
-          "US"
-        ]
-      }
+  list_policy {
+    allow {
+      values = var.allowed_locations
     }
   }
 }
