@@ -1,7 +1,3 @@
-Here's your updated README with the **"Decentralized State (not copy-paste)"** section added:
-
----
-
 # Genesis: Multi-Cloud Platform Engine
 
 Genesis is a **Day 0 Infrastructure-as-Platform (IaP)** framework for provisioning secure, observable, and production-ready foundations across AWS, GCP, and Azure. It utilizes a decentralized **Delivery Unit (DU)** model where infrastructure is treated as a set of governed microservices.
