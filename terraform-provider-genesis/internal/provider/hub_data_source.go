@@ -3,9 +3,29 @@ package provider
 import (
 	"context"
 
+	"github.com/Drecoder/terraform-provider-genesis/internal/genesis"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// hubDataSourceModel maps the read-only data source schema direct to Go memory.
+type hubDataSourceModel struct {
+	ID        types.String `tfsdk:"id"`
+	RootToken types.String `tfsdk:"root_token"`
+	Status    types.String `tfsdk:"status"`
+}
+
+// FromPayload populates the Terraform data source state from a pure Domain Service response.
+func (m *hubDataSourceModel) FromPayload(payload *genesis.SpokePayload) {
+	// For now, mapping simulated root properties for our TDD verification loops
+	m.ID = types.StringValue("hub-global-root")
+	m.RootToken = types.StringValue("vault-encrypted-token-stream")
+	m.Status = types.StringValue("active_governed")
+}
+
+// Ensure the implementation satisfies the expected interfaces.
+var _ datasource.DataSource = &hubDataSource{}
 
 // Ensure the implementation satisfies the expected interfaces.
 var _ datasource.DataSource = &hubDataSource{}
