@@ -1,0 +1,54 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Build and Apply
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Set up the Go environment to compile the provider
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      # 3. Run the Go test suites to ensure everything is green
+      - name: Run Go Tests
+        run: go test -v ./...
+
+      # 4. Install the Terraform CLI on the runner
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      # 5. Build and install the binary into the local development mirror
+      - name: Compile and Install Provider
+        run: |
+          PROVIDER_DIR="$HOME/.terraform.d/plugins/github.com/Drecoder/genesis/1.0.0/linux_amd64"
+          mkdir -p "$PROVIDER_DIR"
+          go build -o "$PROVIDER_DIR/terraform-provider-genesis_v1.0.0"
+
+      # 6. Initialize and apply a sample configuration
+      # Note: In a real run, you would provide the host_url and token via env vars
+      - name: Terraform Init and Apply
+        env:
+          GENESIS_HOST_URL: "https://api.genesis.local"
+          GENESIS_TOKEN: "mock-secret-token"
+        run: |
+          cd examples/dev # Assuming your test .tf files reside here
+          terraform init
+          terraform apply -auto-approve

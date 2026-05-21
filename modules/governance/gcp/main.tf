@@ -22,7 +22,7 @@ locals {
   # Ensures we are targeting either an Org or a Folder, but not both or neither.
   is_org_scope    = var.org_id != null && var.org_id != ""
   is_folder_scope = var.folder_id != null && var.folder_id != ""
-  
+
   target_id = local.is_org_scope ? var.org_id : var.folder_id
 }
 

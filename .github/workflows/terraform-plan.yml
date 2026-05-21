@@ -1,0 +1,54 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: Build and Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Fetch the pull request branch code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Establish Go environment for provider compilation
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      # 3. Verify internal domain and provider test suites
+      - name: Run Go Tests
+        run: go test -v ./...
+
+      # 4. Install the Terraform CLI natively
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: true
+
+      # 5. Compile binary and register to the local development mirror
+      - name: Compile and Install Provider
+        run: |
+          PROVIDER_DIR="$HOME/.terraform.d/plugins/github.com/Drecoder/genesis/1.0.0/linux_amd64"
+          mkdir -p "$PROVIDER_DIR"
+          go build -o "$PROVIDER_DIR/terraform-provider-genesis_v1.0.0"
+
+      # 6. Initialize and generate speculative execution plan
+      - name: Terraform Init and Plan
+        env:
+          GENESIS_HOST_URL: "https://api.genesis.local"
+          GENESIS_TOKEN: "mock-secret-token"
+        run: |
+          cd examples/dev
+          terraform init
+          terraform plan -no-color

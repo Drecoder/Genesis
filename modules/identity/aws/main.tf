@@ -16,9 +16,9 @@ module "spoke_execution_roles" {
   source   = "./spoke-roles"
   for_each = var.deployment_units
 
-  name               = "genesis-execution-${each.key}"
-  oidc_provider_arn  = aws_iam_openid_connect_provider.github.arn
-  github_repo        = each.value.repo
+  name                 = "genesis-execution-${each.key}"
+  oidc_provider_arn    = aws_iam_openid_connect_provider.github.arn
+  github_repo          = each.value.repo
   permissions_boundary = var.permissions_boundary_arn
 }
 

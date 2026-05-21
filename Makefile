@@ -1,68 +1,38 @@
-# Genesis Infrastructure Orchestration
-# ---------------------------------------------------------
-# Variables
-TERRAFORM  := terraform
-TG         := terragrunt
-ENVS       := dev staging prod
-PROVIDERS  := aws gcp azure
+# ==============================================================================
+# GENESIS MULTI-CLOUD RUNTIME ORCHESTRATION LAYER (ANTI-DRIFT GATEWAY)
+# ==============================================================================
 
-# Default target
+IMAGE_NAME   := genesis-toolchain:local
+WORKSPACE_DIR:= $(shell pwd)
+CONTAINER_DIR:= /go/src/genesis
+ENV_FILE     := code-quality.env
+REPORTS_DIR  := $(WORKSPACE_DIR)/coverage-reports
+
+# Unified Local Toolchain Runner
+DOCKER_RUN := docker run --rm \
+	-v "$(WORKSPACE_DIR):$(CONTAINER_DIR)" \
+	-w "$(CONTAINER_DIR)" \
+	--env-file $(ENV_FILE) \
+	-e TF_IN_AUTOMATION=true \
+	$(IMAGE_NAME)
+
 .DEFAULT_GOAL := help
 
+# Automated dynamic toolchain generation target
+.PHONY: build-toolchain
+build-toolchain: ## Build the unified local development container image
+	@echo "==> Packaging immutable compiler and toolchain layer..."
+	docker build -t $(IMAGE_NAME) .
+
 ## ---------------------------------------------------------
-## FOUNDATION (Bootstrap)
+## FOUNDATION (Bootstrap Root of Trust via Unified Container)
 ## ---------------------------------------------------------
 
 .PHONY: bootstrap-aws bootstrap-gcp bootstrap-azure
 bootstrap-aws: ## Initialize the Root of Trust (Identity/State) for AWS
-	@echo "Bootstrapping AWS Foundation..."
-	cd bootstrap/aws && $(TERRAFORM) init && $(TERRAFORM) apply
+	@echo "==> Bootstrapping AWS Foundation..."
+	$(DOCKER_RUN) sh -c "cd bootstrap/aws && terraform init && terraform apply -auto-approve"
 
-bootstrap-gcp: ## Initialize the Root of Trust (Identity/State) for GCP
-	@echo "Bootstrapping GCP Foundation..."
-	cd bootstrap/gcp && $(TERRAFORM) init && $(TERRAFORM) apply
-
-## ---------------------------------------------------------
-## QUALITY ASSURANCE (The "Senior" Mindset)
-## ---------------------------------------------------------
-
-.PHONY: fmt lint validate test
-fmt: ## Format all HCL files recursively
-	@$(TERRAFORM) fmt -recursive
-
-lint: ## Perform static analysis for best practices (requires tflint)
-	@tflint --recursive
-
-validate: ## Check internal consistency of modules
-	@find modules -type d -name ".terraform" -prune -o -type d -exec sh -c "cd {} && $(TERRAFORM) validate" \;
-
-test: ## Run infrastructure unit tests
-	@go test -v ./tests/...
-
-## ---------------------------------------------------------
-## ENVIRONMENT MANAGEMENT
-## ---------------------------------------------------------
-
-# Usage: make plan ENV=dev
-# Usage: make apply ENV=prod
-.PHONY: plan apply destroy
-
-plan: ## View changes for a specific environment (e.g., make plan ENV=dev)
-	@if [ -z "$(ENV)" ]; then echo "Error: ENV is required (dev|staging|prod)"; exit 1; fi
-	cd environments/$(ENV) && $(TG) plan
-
-apply: ## Execute changes for a specific environment
-	@if [ -z "$(ENV)" ]; then echo "Error: ENV is required (dev|staging|prod)"; exit 1; fi
-	cd environments/$(ENV) && $(TG) apply
-
-destroy: ## Teardown an environment (Use with caution!)
-	@if [ -z "$(ENV)" ]; then echo "Error: ENV is required (dev|staging|prod)"; exit 1; fi
-	cd environments/$(ENV) && $(TG) destroy
-
-## ---------------------------------------------------------
-## UTILITIES
-## ---------------------------------------------------------
-
-.PHONY: help
-help: ## Display this help screen
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+lint: ## Perform static analysis for best practices via built-in tflint
+	@echo "==> Running static analysis lint routines..."
+	$(DOCKER_RUN) tflint --recursive

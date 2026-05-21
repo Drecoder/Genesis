@@ -1,7 +1,7 @@
 resource "aws_organizations_policy" "platform_governance_baseline" {
-  name         = "platform-governance-baseline"
-  description  = "Universal security and compliance guardrails for all decentralized Delivery Units"
-  type         = "SERVICE_CONTROL_POLICY"
+  name        = "platform-governance-baseline"
+  description = "Universal security and compliance guardrails for all decentralized Delivery Units"
+  type        = "SERVICE_CONTROL_POLICY"
 
   content = jsonencode({
     Version = "2012-10-17"
@@ -35,9 +35,9 @@ resource "aws_organizations_policy" "platform_governance_baseline" {
 
       # 🚫 Universal: Regional Lockdown (Standard US regions)
       {
-        Sid    = "DenyOutsideApprovedRegions"
-        Effect = "Deny"
-        Action = "*"
+        Sid      = "DenyOutsideApprovedRegions"
+        Effect   = "Deny"
+        Action   = "*"
         Resource = "*"
         Condition = {
           StringNotEquals = {
