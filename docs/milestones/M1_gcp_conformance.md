@@ -93,6 +93,21 @@ The harness writes one record per attempt, and nothing is promoted without it:
 A control advances to `integration_tested` only when its deny **and** allowed records both match
 expectations and the overseer has checked them against the effective policy.
 
+### 6a. Evidence is telemetry, not only files
+
+Every evidence record is also emitted through the OpenTelemetry SDK to the collector from M1b, so
+the platform's proof of its own controls can be queried rather than read.
+
+| Signal | What | Example query |
+| :--- | :--- | :--- |
+| **Trace** | One trace per harness run; one span per attempt (`conformance.attempt`) with `control`, `cloud`, `test`, `expected`, `observed`, `principal`, `scope` attributes | Cloud Trace: `conformance.attempt` spans where `observed != expected` |
+| **Log** | The evidence record above as structured JSON, carrying `trace_id` / `span_id` | Cloud Logging: `jsonPayload.control="GOV-002" AND jsonPayload.observed="deny"` |
+| **Metric** | `governance_conformance_checks_total{control,cloud,test,expected,observed}` (counter) | `sum by (control) (governance_conformance_checks_total{expected!=observed})` must be 0 |
+| **Metric** | `governance_exception_expiry_latency_seconds{control,cloud}` (histogram, from T3) | p99 is the documented worst case for an expired exception |
+
+Acceptance adds: for each test, the span, the log line, and the counter increment all exist and
+agree with the evidence file. A result that exists only as a file does not count.
+
 ---
 
 ## 7. Abort and cleanup (enforced by the harness, not the Builder)
@@ -121,11 +136,34 @@ The infrastructure half passes when:
 - Nothing is applied by an agent.
 
 Per task, record the difficulty score, ladder rung, model, attempts, tokens, cost, and whether the
-overseer had to send it back. That is the first data for calibrating the ladder thresholds.
+overseer had to send it back. That is the first data for calibrating the ladder thresholds. The
+Builder and Reviewer already emit these as OpenTelemetry spans (GenAI conventions:
+`gen_ai.request.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`); with M1b's
+collector they land in Cloud Trace and Monitoring instead of only the local console.
 
 ---
 
-## 9. Dependency and reassessment
+## 9. M1b: telemetry pipeline (the Builder's first task)
+
+M1's evidence needs somewhere to go, and the 2026-10-21 incidents (sovereign-vpc-gcp
+`docs/incidents/`) were all found by a person looking because the platform has no telemetry on its
+own CI. M1b is smaller than M1, so it is the Builder's **first** live task, and M1's tests run
+after it.
+
+| Piece | Scope | Done when |
+| :--- | :--- | :--- |
+| OpenTelemetry collector | One small VM or Cloud Run service in the platform subnet (`10.10.16.0/20`), OTLP in, exporting to Cloud Trace, Monitoring (Managed Prometheus), and Logging; only the runner and platform subnets may reach it; it authenticates to GCP with its own service account | A test span, log, and metric sent from a runner arrive in all three backends |
+| Agent wiring | `OTEL_EXPORTER_OTLP_ENDPOINT` points at the collector for the Builder, Reviewer, and harness | A Builder run's GenAI spans are visible in Cloud Trace |
+| CI telemetry (from the incident preventive actions) | `ci_runner_bootstrap_failures_total` (log-based, from the runner's `bootstrap failed` line), `ci_job_queue_age_seconds` (from the GitHub API on a schedule) | Alerts: any bootstrap failure; an apply job queued more than 15 minutes |
+
+The collector is platform infrastructure, so its Terragrunt unit lives in sovereign-vpc-gcp (next
+to `live/dev/gcp/inference`), not in Genesis; this milestone only depends on it. Collector endpoints
+and credentials come from configuration only (`OTEL_EXPORTER_OTLP_ENDPOINT`,
+`OTEL_EXPORTER_OTLP_HEADERS`), never code, per the playbook's Observability Rules.
+
+---
+
+## 10. Dependency and reassessment
 
 The Builder runs on Opus 5.5 through Bedrock with SSO credentials (AWS Organization plus IAM
 Identity Center, permission set `BuilderBedrockInvoke`). If SSO is not working by **2026-10-28**,
