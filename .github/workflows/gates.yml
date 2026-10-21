@@ -1,0 +1,14 @@
+# Centralized TIER_0 gates. Calls the shared reusable workflow in the platform repo, which detects
+# this repo's stacks (hcl + go here) and runs the deterministic checks. Gate logic lives once in
+# sovereign-vpc-gcp. Requires cross-repo reusable-workflow access enabled there, and PR #3 merged.
+name: gates
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    uses: Drecoder/sovereign-vpc-gcp/.github/workflows/gates.yml@main
