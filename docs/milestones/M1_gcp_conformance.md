@@ -102,7 +102,7 @@ the platform's proof of its own controls can be queried rather than read.
 | :--- | :--- | :--- |
 | **Trace** | One trace per harness run; one span per attempt (`conformance.attempt`) with `control`, `cloud`, `test`, `expected`, `observed`, `principal`, `scope` attributes | Cloud Trace: `conformance.attempt` spans where `observed != expected` |
 | **Log** | The evidence record above as structured JSON, carrying `trace_id` / `span_id` | Cloud Logging: `jsonPayload.control="GOV-002" AND jsonPayload.observed="deny"` |
-| **Metric** | `governance_conformance_checks_total{control,cloud,test,expected,observed}` (counter) | `sum by (control) (governance_conformance_checks_total{expected!=observed})` must be 0 |
+| **Metric** | `governance_conformance_checks_total{control,cloud,test,expected,observed,result}` (counter; `result` is `pass` when `observed == expected`, else `fail`) | `sum by (control) (governance_conformance_checks_total{result="fail"})` must be 0 |
 | **Metric** | `governance_exception_expiry_latency_seconds{control,cloud}` (histogram, from T3) | p99 is the documented worst case for an expired exception |
 
 Acceptance adds: for each test, the span, the log line, and the counter increment all exist and
