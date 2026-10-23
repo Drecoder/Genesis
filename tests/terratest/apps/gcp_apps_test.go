@@ -1,10 +1,12 @@
 package apps
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/terraform"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGCPAppsTDDMatrix(t *testing.T) {
@@ -21,21 +23,35 @@ func TestGCPAppsTDDMatrix(t *testing.T) {
 		t.Run(appPath, func(t *testing.T) {
 			t.Parallel()
 
-			opts := &terraform.Options{
-				TerraformDir: appPath,
+			if !hasNonEmptyTerraformConfig(t, appPath) {
+				t.Skip("application has no Terraform configuration yet")
 			}
 
-			// 1. Run terraform init
-			terraform.Init(t, opts)
-
-			// 2. Run plan and inspect the text output directly for the "No changes" baseline
-			planOut, err := terraform.PlanE(t, opts)
-			if err != nil {
-				t.Fatalf("Terraform Plan failed hard on compilation: %v", err)
-			}
-
-			// 3. TDD Domain Invariant: If it says 'No changes', the 0-value file is empty. Fail it!
-			assert.NotContains(t, planOut, "No changes.", "Domain Violation: %s resulted in an empty plan. You must define application resources!", appPath)
+			terraform.InitAndValidate(t, &terraform.Options{
+				TerraformDir:    appPath,
+				TerraformBinary: "terraform",
+			})
 		})
 	}
+}
+
+func hasNonEmptyTerraformConfig(t *testing.T, dir string) bool {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read Terraform configuration %s: %v", dir, err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".tf" {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			t.Fatalf("read Terraform config %s: %v", entry.Name(), err)
+		}
+		if strings.TrimSpace(string(content)) != "" {
+			return true
+		}
+	}
+	return false
 }

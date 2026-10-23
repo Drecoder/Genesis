@@ -19,6 +19,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "google.subject"       = "assertion.sub"
     "attribute.repository" = "assertion.repository"
   }
+  attribute_condition = "assertion.repository in [${join(", ", [for du in values(var.deployment_units) : jsonencode(du.repo)])}] && assertion.ref == \"refs/heads/main\""
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
@@ -47,4 +48,10 @@ resource "google_storage_bucket_iam_member" "hub_reader" {
   bucket   = var.hub_state_bucket_name
   role     = "roles/storage.objectViewer"
   member   = "serviceAccount:${google_service_account.du_sa[each.key].email}"
+
+  condition {
+    title       = "read-${each.key}-state-prefix"
+    description = "Limit this deployment unit to its own state objects."
+    expression  = "resource.name.startsWith(\"projects/_/buckets/${var.hub_state_bucket_name}/objects/${each.value.state_prefix}/\")"
+  }
 }

@@ -52,6 +52,11 @@ Reusable, composable Terraform building blocks:
 - **Lambda Runner**: A serverless service that generates and executes Terraform plans.
 - **DLQ**: Dead Letter Queue for failed compliance or infrastructure runs.
 
+The checked-in `environments/` directories are currently empty placeholders. This repository
+therefore has no infrastructure apply workflow; an apply pipeline must not be enabled until
+environment configuration, reviewed plans, protected GitHub environments, and cloud identity
+federation are configured and tested.
+
 ---
 
 ## 📂 Project Structure

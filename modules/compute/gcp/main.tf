@@ -22,8 +22,10 @@ resource "google_compute_instance" "app_node" {
 
   network_interface {
     subnetwork = var.subnet_id
-    # Empty access_config block assigns a public ephemeral IP for MVP access
-    access_config {}
+    dynamic "access_config" {
+      for_each = var.assign_public_ip ? [true] : []
+      content {}
+    }
   }
 
   metadata = {
