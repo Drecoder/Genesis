@@ -30,7 +30,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_wrapper: false
+          terraform_wrapper: true
 
       # 4. Verify internal domain and provider test suites
       - name: Run Go Tests
